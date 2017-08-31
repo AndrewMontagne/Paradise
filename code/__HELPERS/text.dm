@@ -450,72 +450,57 @@ proc/checkhtml(var/t)
 			return 1
 	return 0
 
+// Mapping of BBCode to HTML elements
+/var/map_pencode_to_html = list(
+	"b"			=	"b",						"/b"		=	"/b",
+	"i"			=	"i",						"/i"		=	"/i",
+	"u"			=	"u",						"/u"		=	"/u",
+	"small"		=	"span class=\"small\"",		"/small"	=	"span",
+	"large"		=	"span class=\"large\"",		"/large"	=	"span",
+	"h1" 		=	"h1",						"/h1"		=	"/h1",
+	"h2"		=	"h2",						"/h2"		=	"/h2",
+	"h3"		=	"h3",						"/h3"		=	"/h3",
+	"br"		=	"br",
+	"hr"		=	"hr",
+	"center"	=	"center",					"/center"	=	"/center",
+	"right"		=	"span class=\"right\"",		"/right"	=	"/span",
+	"list"		=	"list",
+	"*"			=	"li",						"/*"		=	"/li",
+	"table"		=	"table",					"/table"	=	"/table",
+	"grid"		=	"table class=\"grid\"",		"/grid"		=	"table",
+	"row"		=	"tr",						"/row"		=	"/tr",
+	"header"	=	"th",						"/header"	=	"/th",
+	"cell"		=	"td",						"/cell"		=	"/td",
+	"sign" 		=	"span class=\"signature\">SIGNATURE</span",
+	"field"		=	"span class=\"paper_field\"></span",
+	"logo"		=	"img src = \"ntlogo.png\""
+)
+
+var/forbidden_tags = list()
 
 // Pencode
 /proc/pencode_to_html(text, mob/user, obj/item/weapon/pen/P = null, format = 1, sign = 1, fields = 1, deffont = PEN_FONT, signfont = SIGNFONT, crayonfont = CRAYON_FONT)
-	text = replacetext(text, "\[b\]",		"<B>")
-	text = replacetext(text, "\[/b\]",		"</B>")
-	text = replacetext(text, "\[i\]",		"<I>")
-	text = replacetext(text, "\[/i\]",		"</I>")
-	text = replacetext(text, "\[u\]",		"<U>")
-	text = replacetext(text, "\[/u\]",		"</U>")
-	if(sign)
-		text = replacetext(text, "\[sign\]",	"<font face=\"[signfont]\"><i>[user ? user.real_name : "Anonymous"]</i></font>")
-	if(fields)
-		text = replacetext(text, "\[field\]",	"<span class=\"paper_field\"></span>")
-	if(format)
-		text = replacetext(text, "\[h1\]",	"<H1>")
-		text = replacetext(text, "\[/h1\]",	"</H1>")
-		text = replacetext(text, "\[h2\]",	"<H2>")
-		text = replacetext(text, "\[/h2\]",	"</H2>")
-		text = replacetext(text, "\[h3\]",	"<H3>")
-		text = replacetext(text, "\[/h3\]",	"</H3>")
-		text = replacetext(text, "\n",			"<BR>")
-		text = replacetext(text, "\[center\]",	"<center>")
-		text = replacetext(text, "\[/center\]",	"</center>")
-		text = replacetext(text, "\[br\]",		"<BR>")
-		text = replacetext(text, "\[large\]",	"<font size=\"4\">")
-		text = replacetext(text, "\[/large\]",	"</font>")
-
-	if(istype(P, /obj/item/toy/crayon) || !format) // If it is a crayon, and he still tries to use these, make them empty!
-		text = replacetext(text, "\[*\]", 		"")
-		text = replacetext(text, "\[hr\]",		"")
-		text = replacetext(text, "\[small\]", 	"")
-		text = replacetext(text, "\[/small\]", 	"")
-		text = replacetext(text, "\[list\]", 	"")
-		text = replacetext(text, "\[/list\]", 	"")
-		text = replacetext(text, "\[table\]", 	"")
-		text = replacetext(text, "\[/table\]", 	"")
-		text = replacetext(text, "\[row\]", 	"")
-		text = replacetext(text, "\[cell\]", 	"")
-		text = replacetext(text, "\[logo\]", 	"")
-	if(istype(P, /obj/item/toy/crayon))
-		text = "<font face=\"[crayonfont]\" color=[P ? P.colour : "black"]><b>[text]</b></font>"
-	else 	// They are using "not a crayon" - formatting is OK and such
-		text = replacetext(text, "\[*\]",		"<li>")
-		text = replacetext(text, "\[hr\]",		"<HR>")
-		text = replacetext(text, "\[small\]",	"<font size = \"1\">")
-		text = replacetext(text, "\[/small\]",	"</font>")
-		text = replacetext(text, "\[list\]",	"<ul>")
-		text = replacetext(text, "\[/list\]",	"</ul>")
-		text = replacetext(text, "\[table\]",	"<table border=1 cellspacing=0 cellpadding=3 style='border: 1px solid black;'>")
-		text = replacetext(text, "\[/table\]",	"</td></tr></table>")
-		text = replacetext(text, "\[grid\]",	"<table>")
-		text = replacetext(text, "\[/grid\]",	"</td></tr></table>")
-		text = replacetext(text, "\[row\]",		"</td><tr>")
-		text = replacetext(text, "\[cell\]",	"<td>")
-		text = replacetext(text, "\[logo\]",	"<img src = ntlogo.png>")
-	if(P)
-		text = "<font face=\"[deffont]\" color=[P ? P.colour : "black"]>[text]</font>"
-	else
-		text = "<font face=\"[deffont]\">[text]</font>"
+	forbidden_tags = list()
+	var/regex/tagfind = new("\\\[(\[/A-Za-z0-9*\]+)\\\]", "ig")
+	text = tagfind.Replace(text, /proc/pen_to_html_regex)
+	text = replacetext(text, "\n", "<br/>")
 	text = copytext(text, 1, MAX_PAPER_MESSAGE_LEN)
 	return text
+
+// This gets called against every match to programattically replace it
+/proc/pen_to_html_regex(match, tag)
+	if (tag in forbidden_tags) //Remove the tag if forbidden
+		return match
+	if (tag in map_pencode_to_html)
+		return "<[map_pencode_to_html[tag]]>"
+	return match //Default to returning original
 
 /proc/html_to_pencode(text)
 	text = replacetext(text, "<BR>",								"\n")
 	text = replacetext(text, "<center>",							"\[center\]")
 	text = replacetext(text, "</center>",							"\[/center\]")
+	text = replacetext(text, "<right>",							"\[right\]")
+	text = replacetext(text, "</right>",							"\[/right\]")
 	text = replacetext(text, "<BR>",								"\[br\]")
 	text = replacetext(text, "<B>",									"\[b\]")
 	text = replacetext(text, "</B>",								"\[/b\]")
@@ -538,9 +523,9 @@ proc/checkhtml(var/t)
 	text = replacetext(text, "<font size = \"1\">",		"\[small\]")
 	text = replacetext(text, "<ul>",					"\[list\]")
 	text = replacetext(text, "</ul>",					"\[/list\]")
-	text = replacetext(text, "<table border=1 cellspacing=0 cellpadding=3 style='border: 1px solid black;'>",	"\[table\]")
+	text = replacetext(text, "<table>",	"\[table\]")
 	text = replacetext(text, "</td></tr></table>",		"\[/table\]")
-	text = replacetext(text, "<table>",					"\[grid\]")
+	text = replacetext(text, "<table class=\"grid\">",	"\[grid\]")
 	text = replacetext(text, "</td></tr></table>",		"\[/grid\]")
 	text = replacetext(text, "</td><tr>",				"\[row\]")
 	text = replacetext(text, "<td>",					"\[cell\]")

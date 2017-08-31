@@ -70,12 +70,12 @@
 
 	var/data
 	if((!user.say_understands(null, all_languages["Galactic Common"]) && !forceshow) || forcestars) //assuming all paper is written in common is better than hardcoded type checks
-		data = "<HTML><HEAD><TITLE>[name]</TITLE></HEAD><BODY>[stars(info)][stamps]</BODY></HTML>"
+		data = "<HTML><HEAD><TITLE>[name]</TITLE><link rel=\"stylesheet\" type=\"text/css\" href=\"paper.css\"></HEAD><BODY>[stars(info)][stamps]</BODY></HTML>"
 		if(view)
 			usr << browse(data, "window=[name]")
 			onclose(usr, "[name]")
 	else
-		data = "<HTML><HEAD><TITLE>[name]</TITLE></HEAD><BODY>[infolinks ? info_links : info][stamps]</BODY></HTML>"
+		data = "<HTML><HEAD><TITLE>[name]</TITLE><link rel=\"stylesheet\" type=\"text/css\" href=\"paper.css\"></HEAD><BODY>[infolinks ? info_links : info][stamps]</BODY></HTML>"
 		if(view)
 			usr << browse(data, "window=[name]")
 			onclose(usr, "[name]")
